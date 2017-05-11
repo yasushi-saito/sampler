@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <functional>
 #include <queue>
@@ -15,9 +16,7 @@
 template <typename T, typename Compare = std::less<T>>
 class WeightedReservoirSampler {
  public:
-  static constexpr int kDefaultMaxSamples = 65536;
-  WeightedReservoirSampler(int max_samples = kDefaultMaxSamples,
-                           Compare less = Compare())
+  WeightedReservoirSampler(int max_samples, Compare less = Compare())
       : max_samples_(max_samples),
         less_(std::move(less)),
         rand_(0),
@@ -33,8 +32,9 @@ class WeightedReservoirSampler {
     const double u = dist_(rand_);
     Sample sample = {value, weight, std::pow(u, 1.0 / weight)};
 
-    if (!samples_.empty() && sample.weight < samples_.back().weight) {
-      // Common case.
+    if (samples_.size() >= std::max(1, max_samples_) &&
+        sample.key < samples_.front().key) {
+      // Common case. The new sample smaller than the min key in samples_.
       return;
     }
     samples_.push_back(sample);
@@ -50,29 +50,24 @@ class WeightedReservoirSampler {
     double weight;
     double key;
   };
-  const std::vector<Sample>& GetSamples() const { return samples_; }
+  const std::vector<Sample>& Samples() const { return samples_; }
 
   bool Empty() const { return samples_.empty(); }
 
   const T& Quantile(double fraction) {
     if (state_ != State::SORTED) {
-      std::stable_sort(samples_.begin(), samples_.end(), less_);
-      total_weight_ = 0;
-      for (const Sample& s : samples_) {
-        total_weight_ += s.weight;
-      }
+      std::stable_sort(samples_.begin(), samples_.end(),
+                       [this](const Sample& s0, const Sample& s1) -> bool {
+                         return less_(s0.value, s1.value);
+                       });
       state_ = State::SORTED;
     }
 
-    CHECK(!samples_.empty());
-    double cumulative_weight = 0;
-    for (const Sample& s : samples_) {
-      cumulative_weight += s.weight;
-      if (cumulative_weight >= fraction * total_weight_) {
-        return s.value;
-      }
-    }
-    return samples_.back().value();
+    assert(!samples_.empty());
+    int index = fraction * samples_.size();
+    if (index < 0) index = 0;
+    if (index >= samples_.size()) index = samples_.size() - 1;
+    return samples_[index].value;
   }
 
  private:
@@ -91,6 +86,4 @@ class WeightedReservoirSampler {
 
   State state_ = State::UNKNOWN;
   std::vector<Sample> samples_;
-
-  double total_weight_ = 0;
 };
