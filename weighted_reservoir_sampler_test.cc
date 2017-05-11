@@ -11,6 +11,15 @@ TEST(WeightedReservoir, Empty) {
   EXPECT_TRUE(s.GetSamples().empty());
 }
 
+TEST(WeightedReservoir, Simple) {
+  WeightedReservoirSampler<double> s(1000);
+  for (int i = 0; i < 10000; ++i) {
+    s.Add(i % 10);
+  }
+  EXPECT_EQ(1000, s.GetSamples().size());
+}
+
 int main(int argc, char**argv) {
+  ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

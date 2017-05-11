@@ -22,7 +22,7 @@ set_property(
   benchmark/src/project_benchmark-build/src/libbenchmark.a)
 add_dependencies(benchmark project_benchmark)
 
-add_executable(weighted_reservoir_sampler_test weighted_reservoir_sampler_test)
+add_executable(weighted_reservoir_sampler_test weighted_reservoir_sampler_test.cc)
 set_property(TARGET weighted_reservoir_sampler_test PROPERTY CXX_STANDARD 11)
 include_directories(benchmark/src/project_benchmark/include)
 target_link_libraries(weighted_reservoir_sampler_test gtest benchmark pthread ${GTEST_LIBRARIES})
