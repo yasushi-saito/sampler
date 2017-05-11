@@ -7,7 +7,7 @@
 #include <queue>
 #include <random>
 
-// Weighted random sampling with a reservoir
+// Weighted random sampling with a reservoir. Thread compatible.
 //
 // PS Efraimidis, PG Spirakis - Information Processing Letters, 2006
 //
@@ -22,8 +22,12 @@ class WeightedReservoirSampler {
         rand_(0),
         dist_(0, 1) {}
 
+  // Add a new value. The same as WeightedAdd(value, 1).
   void Add(const T& value) { WeightedAdd(value, 1); }
 
+  // Add a new value with the given weight. The weight defines the relative
+  // probability that the value is sampled. The higher the weight, the more
+  // likely the value is chosen.
   void WeightedAdd(const T& value, double weight) {
     if (state_ != State::HEAP) {
       std::make_heap(samples_.begin(), samples_.end(), SampleLessThan);
